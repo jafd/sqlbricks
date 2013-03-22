@@ -165,13 +165,13 @@ class Insert(BaseQuery, _WithMixin, _ReturningMixin):
                        ).strip()
         return result
 
-class Delete(BaseQuery, _JoinMixin, _WithMixin, _UsingMixin, _WhereMixin):
+class Delete(BaseQuery, _JoinMixin, _WithMixin, _UsingMixin, _WhereMixin, _ReturningMixin):
 
     def __init__(self, table, alias=None, only=False):
         self.table = table
         self.alias = None
         self.only = only
-        super(Update, self).__init__()
+        super(Delete, self).__init__()
         
     def format_table(self):
         if self.alias is not None:

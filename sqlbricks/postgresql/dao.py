@@ -142,7 +142,7 @@ class Collection(object):
         return self
     
     def start(self):
-        self.cursor = self.conn.cursor()
+        self.cursor = self.connection.cursor()
         self.cursor.execute(unicode(self.query), self.query.bound_parameters)
         self.started = True
     
@@ -289,6 +289,7 @@ def find_mutables(classdict, bases):
 class BaseDAO(object):
     _mutables = None
     _immutables = None
+    _fields = None
     __metaclass__ = DataObjectMeta
     __table__ = None
     __primary__ = 'id'
@@ -313,8 +314,8 @@ class BaseDAO(object):
             self.__changed__.add(attr)
         object.__setattr__(attr, value)
     
-    @staticmethod
-    def fetch_dict_one(self, cursor):
+    @classmethod
+    def fetch_dict_one(cls, cursor):
         row = cursor.fetchone()
         result = {}
         description = cursor.description
