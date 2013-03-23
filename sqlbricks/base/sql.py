@@ -24,7 +24,8 @@ class BaseQuery(object):
 class _BaseMixin(object):
 
     def check_clause(self, clause, initial=None):
-        if initial is None: initial = OrderedDict()
+        if initial is None:
+            initial = OrderedDict()
         if not self.clauses.get(clause):
             self.clauses[clause] = initial
     

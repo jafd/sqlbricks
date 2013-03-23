@@ -10,10 +10,24 @@ import copy
 __DAO__ = {}
 
 def get_dao(name):
+    """Undocumented"""
     return __DAO__[name]
 
-class Expression(object):
+class Expression(object): #IGNORE:R0903
+    """
+    This class is used to build SQL expression for some clauses
+    as if they were Python expression. This enables you to put
+    into a WHERE clause things like
     
+      collection.filter(User.name == 'john')
+      
+    instead of
+    
+      collection.filter("users.name = 'john'")
+      
+    DAO field accessors, when invoked as class methods, will
+    return Expression instances. 
+    """
     def __init__(self, initval=None):
         self.initval = initval
         
@@ -22,6 +36,12 @@ class Expression(object):
         
     @classmethod
     def _escape(cls, something):
+        """
+        Escapes a string literal to be in accord with SQL expectations:
+        that is, "'" is escaped.
+        
+        @param something: The string to be escaped  
+        """
         if isinstance(something, (cls, Literal)):
             return something
         else:
@@ -29,6 +49,12 @@ class Expression(object):
 
     @classmethod
     def call(cls, funcname, *args):
+        """
+        Make a function call.
+        
+        Expression.call('AVG', User.age) -> 'AVG(users.age)'
+        
+        """
         processed = u', '.join([unicode(cls._escape(x)) for x in args])
         return Expression(u"{0}({1})".\
                           format(funcname, processed))
@@ -37,6 +63,9 @@ class Expression(object):
         return str(self.initval)
     
     def _fmt(self, fmt, other):
+        """
+        A formatting helper for binary operators.
+        """
         return Expression(fmt.\
                           format(self.initval, self._escape(other)))
 
@@ -115,7 +144,7 @@ class Expression(object):
     def __gte__(self, other):
         return self._fmt(u'({0} <= {1})', other)
 
-class Field(object):
+class Field(object): #IGNORE:R0903
     """
     This class should be used for field member of DAO classes.
     Only Fields can be saved and queried automatically.
@@ -167,11 +196,20 @@ class Collection(object):
         if not self.started:
             self.start()
         return self.cursor.rowcount
-
-class Relationship(object):
     
-    def __init__(self, entity, mine, theirs, collection=False, via_table=None,
-                 via_mine=None, via_theirs=None):
+    def __delitem__(self, item):
+        raise RuntimeError("Cannot delete items from the collection")
+    
+    def __getitem__(self, index):
+        raise RuntimeError("Only use iteration to access items in a Collection")
+    
+    def __setitem__(self, idx, value):
+        raise RuntimeError("Collections are read-only")
+
+class Relationship(object): #IGNORE:R0902
+    
+    def __init__(self, entity, mine, theirs, collection=False, #IGNORE:R0913
+                 via_table=None, via_mine=None, via_theirs=None): 
         self.name = None
         self.parent = None
         self.entity = entity
@@ -307,7 +345,7 @@ class BaseDAO(object):
     __metaclass__ = DataObjectMeta
     __table__ = None
     __primary__ = 'id'
-    id = None
+    id = Field(None)
 
     def __new__(cls, **kwargs):
         obj = object.__new__(cls)
@@ -330,6 +368,13 @@ class BaseDAO(object):
     
     @classmethod
     def fetch_dict_one(cls, cursor):
+        """
+        Fetch a value from a database cursor and
+        make it into a dictionary.
+        
+        @param cursor: DB-API cursor
+        @return: dict
+        """
         row = cursor.fetchone()
         result = {}
         description = cursor.description
@@ -339,35 +384,51 @@ class BaseDAO(object):
         return result
     
     def save(self):
+        """
+        Insert or update this object into the database.
+        """
         values = {}
-        for c in self.__changed__:
-            values[c] = getattr(self, c)
+        for field in self.__changed__:
+            values[field] = getattr(self, field)
             
         if getattr(self, self.__primary__) is None:
             statement = Insert(self.__table__)
-            statement.add_values(**c)
+            statement.add_values(**values)
         else:
             statement = Update(self.__table__)
-            statement.add_set(**c)
+            statement.add_set(**values)
         statement.add_returning(*self._values)
-        c = self.__connection__.cursor()
-        c.execute(unicode(statement), statement.bound_parameters)
-        row = self.fetch_dict_one(c)
-        [setattr(self, k, v) for k, v in row.items()]
+        cur = self.__connection__.cursor()
+        cur.execute(unicode(statement), statement.bound_parameters)
+        row = self.fetch_dict_one(cur)
+        [setattr(self, key, val) for key, val in row.items()]
         self.__changed__ = set()
         
     def delete(self):
+        """
+        Deletes this object from the database.
+        NB: if you plan on inserting it again and use surrogate
+        keys, you will need to set them to None.
+        """
         if getattr(self, self.__primary__) is None:
             return None
         statement = Delete(self.__table__)
         statement.add_where('{0} = %({0})s'.format(self.__primary__))
         statement.bound_parameters[self.__primary__] = getattr(self.__primary__)
-        c = self.__connection__.cursor()
-        c.execute(unicode(statement), statement.bound_parameters)
-        return c.rowcount
+        cur = self.__connection__.cursor()
+        cur.execute(unicode(statement), statement.bound_parameters)
+        return cur.rowcount
     
     @classmethod
     def from_cursor(cls, cur, conn):
+        """
+        Hydrates objects from a database cursor.
+        
+        @param cur: the cursor in question
+        @param conn: the database connection to be used
+                     for objects
+        @return: list of DAO objects
+        """
         result = []
         while True:
             try:
@@ -399,8 +460,16 @@ class BaseDAO(object):
 
     @classmethod
     def load_by_primary(cls, conn, value):
-        cp = { cls.__primary__ : value }
-        return cls.load_by(conn, **cp)
+        """
+        Fetch and hydrate an object by its primary key.
+        
+        @param conn: database connection object
+        @param value: the value of primary key
+        
+        @todo: make it usable for composite keys
+        """
+        params = { cls.__primary__ : value }
+        return cls.load_by(conn, **params)
 
     def __getattribute__(self, attr):
         print self

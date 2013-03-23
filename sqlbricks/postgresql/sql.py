@@ -15,6 +15,9 @@ class _ReturningMixin(_BaseMixin):
     """
 
     def add_returning(self, *args, **kwargs):
+        """
+        Adds elements to the RETURNING clause.
+        """
         self.check_clause('returning', set())
         for arg in args:
             self.clauses['returning'][unicode(arg)] = True
@@ -22,14 +25,17 @@ class _ReturningMixin(_BaseMixin):
             clause = u"{0} AS {1}".format(val, key)
             self.clauses['returning'].add(clause)
     
-    def format_returning(self):
+    def format_returning(self): #IGNORE:C0111
         result = u''
         if self.clauses.get('returning'):
-            result = u"RETURNING {0}".format(u', '.join(self.clauses.get('returning')))
+            result = u"RETURNING {0}".\
+                format(u', '.join(self.clauses.get('returning')))
         return result
-    
+
+#IGNORE:R0903
+#IGNORE:R0904
 class Select(BaseQuery, _FieldListMixin, _FromMixin, _WhereMixin,
-             _JoinMixin, _GroupMixin, _OrderMixin, _HavingMixin,
+             _JoinMixin, _GroupMixin, _OrderMixin, _HavingMixin,  
              _WithMixin, _LimitMixin):
     
     def __unicode__(self):
@@ -56,7 +62,7 @@ class Select(BaseQuery, _FieldListMixin, _FromMixin, _WhereMixin,
                        ).strip()
         return result
 
-class Literal(object):
+class Literal(object): #IGNORE:R0903
     def __init__(self, value):
         self.value = value
         
@@ -69,7 +75,7 @@ class Literal(object):
     def __repr__(self):
         return repr(self.value)
 
-class Update(_WithMixin, _WhereMixin, _FromMixin, _JoinMixin,
+class Update(_WithMixin, _WhereMixin, _FromMixin, _JoinMixin, #IGNORE:R0901
              _ReturningMixin, _BaseMixin, BaseQuery):
     
     def __init__(self, table, alias=None, only=False):
@@ -80,12 +86,12 @@ class Update(_WithMixin, _WhereMixin, _FromMixin, _JoinMixin,
         
     def add_set(self, **kwargs):
         self.check_clause('set', {})
-        for k, v in kwargs.iteritems():
-            if isinstance(v, Literal):
-                arg = u'{0} = {1}'.format(k, v)
+        for key, val in kwargs.iteritems():
+            if isinstance(val, Literal):
+                arg = u'{0} = {1}'.format(key, val)
             else:
-                self.bound_parameters[k] = v
-                arg = u'{0} = %({1})s'.format(k, k)
+                self.bound_parameters[key] = val
+                arg = u'{0} = %({0})s'.format(key)
             self.clauses['set'][arg] = True
             
     def format_set(self):
@@ -132,14 +138,14 @@ class Insert(BaseQuery, _WithMixin, _ReturningMixin):
 
     def add_values(self, **kwargs):
         self.check_clause('values', {})
-        for k, v in kwargs.iteritems():
-            if isinstance(v, Literal):
-                arg_c = k
-                arg_v = unicode(v)
+        for key, val in kwargs.iteritems():
+            if isinstance(val, Literal):
+                arg_c = key
+                arg_v = unicode(val)
             else:
-                self.bound_parameters[k] = v
-                arg_c = k
-                arg_v = u'%({0})s'.format(k)
+                self.bound_parameters[key] = val
+                arg_c = key
+                arg_v = u'%({0})s'.format(key)
             self.clauses['values'][arg_c] = arg_v
             
     def format_values(self):
@@ -147,9 +153,9 @@ class Insert(BaseQuery, _WithMixin, _ReturningMixin):
             return u''
         buf1 = []
         buf2 = []
-        for k, v in self.clauses.get('values').iteritems():
-            buf1.append(k)
-            buf2.append(v)
+        for key, val in self.clauses.get('values').iteritems():
+            buf1.append(key)
+            buf2.append(val)
         return u'({0}) VALUES ({1})'.format(u', '.join(buf1), u', '.join(buf2))
 
     def add_query(self, query):
@@ -166,17 +172,19 @@ class Insert(BaseQuery, _WithMixin, _ReturningMixin):
             '''.format(
                        with_clause = self.format_with(),
                        table_name = self.table,
-                       values_or_query = self.format_values() if self.clauses.get('values') else unicode(self.clauses.get('query')),
+                       values_or_query = self.format_values() \
+                            if self.clauses.get('values')\
+                            else unicode(self.clauses.get('query')),
                        returning = self.format_returning()
                        ).strip()
         return result
 
-class Delete(BaseQuery, _JoinMixin, _WithMixin, _UsingMixin,
+class Delete(BaseQuery, _JoinMixin, _WithMixin, _UsingMixin, #IGNORE:R0901
              _WhereMixin, _ReturningMixin):
 
     def __init__(self, table, alias=None, only=False):
         self.table = table
-        self.alias = None
+        self.alias = alias
         self.only = only
         super(Delete, self).__init__()
         
