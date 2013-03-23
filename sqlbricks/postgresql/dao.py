@@ -29,85 +29,91 @@ class Expression(object):
 
     @classmethod
     def call(cls, funcname, *args):
-        return Expression(u"{0}({1})".format(funcname, u', '.join([unicode(cls._escape(x)) for x in args])))
+        processed = u', '.join([unicode(cls._escape(x)) for x in args])
+        return Expression(u"{0}({1})".\
+                          format(funcname, processed))
     
     def __str__(self):
         return str(self.initval)
     
+    def _fmt(self, fmt, other):
+        return Expression(fmt.\
+                          format(self.initval, self._escape(other)))
+
     def __add__(self, other):
-        return Expression(u'({0} + {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} + {1})', other)
     
     def __radd__(self, other):
-        return Expression(u'({1} + {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({1} + {0})', other)
 
     def __sub__(self, other):
-        return Expression(u'({0} - {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} - {1})', other)
     
     def __rsub__(self, other):
-        return Expression(u'({1} - {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({1} - {0})', other)
 
     def __mul__(self, other):
-        return Expression(u'({0} * {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} * {1})', other)
     
     def __rmul__(self, other):
-        return Expression(u'({1} * {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({1} * {0})', other)
 
     def __div__(self, other):
-        return Expression(u'({0} / {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} / {1})', other)
     
     def __rdiv__(self, other):
-        return Expression(u'({1} / {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({1} / {0})', other)
 
     def __mod__(self, other):
-        return Expression(u'({0} % {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} % {1})', other)
     
     def __rmod__(self, other):
-        return Expression(u'({1} % {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({1} % {0})', other)
 
     def __pow__(self, other):
-        return Expression(u'POWER({0}, {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'POWER({0}, {1})', other)
     
     def __rpow__(self, other):
-        return Expression(u'POWER({1}, {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'POWER({1}, {0})', other)
 
     def __and__(self, other):
-        return Expression(u'({0} AND {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} AND {1})', other)
     
     def __rand__(self, other):
-        return Expression(u'({1} AND {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({1} AND {0})', other)
 
     def __or__(self, other):
-        return Expression(u'({0} OR {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} OR {1})', other)
     
     def __ror__(self, other):
-        return Expression(u'({1} OR {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({1} OR {0})', other)
 
     def __xor__(self, other):
-        return Expression(u'({0} XOR {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} XOR {1})', other)
     
     def __rxor__(self, other):
-        return Expression(u'({1} XOR {0})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({1} XOR {0})', other)
 
     def __not__(self):
         return Expression(u'(NOT {0})'.format(self.initval))
     
     def __eq__(self, other):
-        return Expression(u'({0} = {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} = {1})', other)
 
     def __ne__(self, other):
-        return Expression(u'({0} <> {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} <> {1})', other)
 
     def __lt__(self, other):
-        return Expression(u'({0} < {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} < {1})', other)
 
     def __gt__(self, other):
-        return Expression(u'({0} > {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} > {1})', other)
 
     def __lte__(self, other):
-        return Expression(u'({0} >= {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} >= {1})', other)
 
     def __gte__(self, other):
-        return Expression(u'({0} <= {1})'.format(self.initval, self._escape(other)))
+        return self._fmt(u'({0} <= {1})', other)
 
 class Field(object):
     """
@@ -120,7 +126,8 @@ class Field(object):
     
     def __get__(self, obj, objtype=None):
         if obj is None:
-            return Expression(u'"{0}"."{1}"'.format(objtype.__table__, self._name))
+            return Expression(u'"{0}"."{1}"'.\
+                              format(objtype.__table__, self._name))
         return self.value
 
     def __set__(self, obj, value):
@@ -179,7 +186,8 @@ class Relationship(object):
         fmt_via_join = u"JOIN {via_table} ON ({via_mine} = {my_id})".\
             format(
                    via_table = self.via_table,
-                   via_mine = u'"{0}"."{1}"'.format(self.via_table, self.via_mine),
+                   via_mine = u'"{0}"."{1}"'.\
+                        format(self.via_table, self.via_mine),
                    my_id = getattr(self.parent, self.mine)
                    )
         fmt_theirs_join = u"JOIN {their_table} ON ({via_theirs} = {their_id})".\
@@ -225,16 +233,19 @@ class Relationship(object):
             return collection
         return next(collection)
 
+
 class DataObjectMeta(type):
-    def __new__(cls, classname, bases, classdict):
+
+    def __new__(mcs, classname, bases, classdict):
         mutables = find_mutables(classdict, bases)
         fields = find_fields(classdict, bases)
-        rels = find_relationships(classdict, bases, cls)
+        rels = find_relationships(classdict, bases, mcs)
         classdict['_mutables'] = mutables
         classdict['_fields'] = fields
         classdict['_relationships'] = rels
-        __DAO__[cls.__name__] = cls
-        return type.__new__(cls, classname, bases, classdict)
+        __DAO__[mcs.__name__] = mcs
+        return type.__new__(mcs, classname, bases, classdict)
+
 
 def find_fields(classdict, bases):
     found_fields = set()
@@ -248,6 +259,7 @@ def find_fields(classdict, bases):
                 if not name in found_fields:
                     found_fields.add(name)
     return frozenset(found_fields)
+
 
 def find_relationships(classdict, bases, cls):
     found_rels = set()
@@ -263,6 +275,7 @@ def find_relationships(classdict, bases, cls):
                     found_rels.add(name)
     return frozenset(found_rels)
    
+
 def find_mutables(classdict, bases):
     def create_default(name, value):
         return name, lambda: copy.copy(value)
@@ -286,6 +299,7 @@ def find_mutables(classdict, bases):
                     mutables.add((name, value))
     return frozenset(mutables)
 
+
 class BaseDAO(object):
     _mutables = None
     _immutables = None
@@ -305,8 +319,8 @@ class BaseDAO(object):
     def __init__(self, __conn__=None, **kwargs):
         self.__connection__ = __conn__
         self.__changed__ = set()
-        for k, v in kwargs.iteritems():
-            setattr(self, k, v)
+        for key, val in kwargs.iteritems():
+            setattr(self, key, val)
         self.__changed__ = set()
     
     def __setattr__(self, attr, value):
@@ -373,7 +387,8 @@ class BaseDAO(object):
     @classmethod
     def load_by(cls, conn, *args, **kwargs):
         statement = Select()
-        statement.add_fields([u'"{0}"."{1}"'.format(cls.__table__, x) for x in cls._fields])
+        statement.add_fields([u'"{0}"."{1}"'.\
+                              format(cls.__table__, x) for x in cls._fields])
         statement.add_from(cls.__table__)
         for lit in args:
             statement.add_where(lit)

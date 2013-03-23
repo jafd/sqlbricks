@@ -9,14 +9,18 @@ from ..base.sql import BaseQuery, _BaseMixin, _WhereMixin, _HavingMixin, \
     _UsingMixin, _LimitMixin, _WithMixin
 
 class _ReturningMixin(_BaseMixin):
+    """
+    This mixin class provides support for RETURNING clause
+    which is PostgreSQL-specific. It is used in DML statements.
+    """
 
     def add_returning(self, *args, **kwargs):
         self.check_clause('returning', set())
         for arg in args:
             self.clauses['returning'][unicode(arg)] = True
-        for k, v in kwargs.iteritems():
-            ks = u"{0} AS {1}".format(v, k)
-            self.clauses['returning'].add(ks)
+        for key, val in kwargs.iteritems():
+            clause = u"{0} AS {1}".format(val, key)
+            self.clauses['returning'].add(clause)
     
     def format_returning(self):
         result = u''
@@ -24,8 +28,9 @@ class _ReturningMixin(_BaseMixin):
             result = u"RETURNING {0}".format(u', '.join(self.clauses.get('returning')))
         return result
     
-class Select(BaseQuery, _FieldListMixin, _FromMixin, _WhereMixin, _JoinMixin,
-             _GroupMixin, _OrderMixin, _HavingMixin, _WithMixin, _LimitMixin):
+class Select(BaseQuery, _FieldListMixin, _FromMixin, _WhereMixin,
+             _JoinMixin, _GroupMixin, _OrderMixin, _HavingMixin,
+             _WithMixin, _LimitMixin):
     
     def __unicode__(self):
         result = u'''
@@ -64,7 +69,8 @@ class Literal(object):
     def __repr__(self):
         return repr(self.value)
 
-class Update(_WithMixin, _WhereMixin, _FromMixin, _JoinMixin, _ReturningMixin, _BaseMixin, BaseQuery):
+class Update(_WithMixin, _WhereMixin, _FromMixin, _JoinMixin,
+             _ReturningMixin, _BaseMixin, BaseQuery):
     
     def __init__(self, table, alias=None, only=False):
         self.table = table
@@ -165,7 +171,8 @@ class Insert(BaseQuery, _WithMixin, _ReturningMixin):
                        ).strip()
         return result
 
-class Delete(BaseQuery, _JoinMixin, _WithMixin, _UsingMixin, _WhereMixin, _ReturningMixin):
+class Delete(BaseQuery, _JoinMixin, _WithMixin, _UsingMixin,
+             _WhereMixin, _ReturningMixin):
 
     def __init__(self, table, alias=None, only=False):
         self.table = table
